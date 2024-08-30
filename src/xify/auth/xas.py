@@ -68,3 +68,5 @@ def create_xas():
         logger.critical(
             "Failed to authenticate. Reason: %s | %s", r.status_code, r.text
         )
+
+        return s, None, None, None
