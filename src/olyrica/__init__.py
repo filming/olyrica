@@ -12,8 +12,11 @@ class Olyrica:
 
     def __init__(self):
         self.logger = self.setup_logger()
-        self.xify = Xify()
         self.logger.info("An instance of Olyrica has been initialized.")
+
+        self.logger.info("Attempting to create an instance of XIFY.")
+        self.xify = Xify()
+        self.xify.create_xas()
 
     def setup_logger(self) -> logging.Logger:
         """Create a TimedRotatingFileHandler that rotates at midnight and formats filenames dynamically."""
