@@ -90,7 +90,10 @@ class Olyrica:
 
         # Get a random album
         LYRICS_DIR_PATH = os.path.join("storage", "lyrics")
-        random_album = random.choice(os.listdir(LYRICS_DIR_PATH))
+        random_album = random.choice(
+            ["SOUR", "GUTS"]
+        )  # We're going to hard-code the album choices for this project
+
         album_dir_path = os.path.join(LYRICS_DIR_PATH, random_album)
 
         # Get a random song from the album
