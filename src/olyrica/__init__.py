@@ -16,7 +16,7 @@ from ..xify import Xify
 class Olyrica:
     """A class to create a Twitter bot that tweets Olivia Rodrigo's song lyrics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
         self.logger = self.setup_logger()
@@ -75,7 +75,7 @@ class Olyrica:
 
         return logger
 
-    def get_valid_lyric(self):
+    def get_valid_lyric(self) -> str:
         """Get a lyric from storage and analyze it using AI."""
 
         lyric = ""
@@ -90,7 +90,7 @@ class Olyrica:
 
         return lyric
 
-    def get_random_lyric(self):
+    def get_random_lyric(self) -> str:
         """Get a random lyric from storage."""
 
         # Get a random album
@@ -130,7 +130,7 @@ class Olyrica:
 
         return random_song_lyric
 
-    def analyze_lyric(self, lyric):
+    def analyze_lyric(self, lyric) -> bool:
         """Determine the validity of a lyric using OpenAI."""
 
         # Create custom prompt
