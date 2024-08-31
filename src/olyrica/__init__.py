@@ -1,9 +1,14 @@
+from dotenv import load_dotenv
+import requests
+
 import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import zipfile
 from os.path import basename
 import random
+import json
+import time
 
 from ..xify import Xify
 
@@ -12,6 +17,8 @@ class Olyrica:
     """A class to create a Twitter bot that tweets Olivia Rodrigo's song lyrics."""
 
     def __init__(self):
+        self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
         self.logger = self.setup_logger()
         self.logger.info("An instance of Olyrica has been initialized.")
 
@@ -74,14 +81,12 @@ class Olyrica:
         lyric = ""
         is_valid_lyric = False
 
-        self.logger.info("Attempting to retrieve and validate a lyric.")
-
         while not is_valid_lyric:
+            self.logger.info("Attempting to retrieve and validate a lyric.")
+
             lyric = self.get_random_lyric()
 
-            is_valid_lyric = (
-                True  # we'll do some checking later to properly validate this
-            )
+            is_valid_lyric = self.analyze_lyric(lyric)
 
         return lyric
 
@@ -124,3 +129,114 @@ class Olyrica:
         )
 
         return random_song_lyric
+
+    def analyze_lyric(self, lyric):
+        """Determine the validity of a lyric using OpenAI."""
+
+        # Create custom prompt
+        prompt = f"""You will be given a song lyric that will require you to analyze its emotional depth, relatability and thought-provoking nature. This is to determine its potential impact on my Twitter audience. My Twitter audience in this case are fans of a specific popstar. Respond with 'Positive' if the lyric demonstrates introspection, emotional resonance, or thought-provoking elements, making it relatable and engaging. Otherwise, respond with 'Negative' if the lyric lacks depth or fails to resonate emotionally or intellectually. If the lyric contains vivid metaphors, powerful imagery, or captures universal experiences, consider it as 'Positive'. Here is the lyric: {lyric}"""
+
+        sample_valid_lyrics = [
+            "You used me as an alibi",
+            "Just so I could call you mine",
+            "And do you tell her she's the most beautiful girl you've ever seen?",
+            "She probably gives you butterflies",
+            "Quit my job, start a new life",
+            "Show her off like she's a new trophy",
+            "You got me fucked up in the head, boy",
+            "But even after all this, you're still everything to me",
+            "Yeah, I'm so tough when I'm alone and I make you feel so guilty",
+            "And I'd leave you, but the roller coaster's all I've ever had",
+            "Crying on the floor of my bathroom",
+            "Maybe I'm too emotional",
+        ]
+        sample_invalid_lyrics = [
+            "The things you did",
+            "Doe-eyed as you buried me",
+            "I wonder if you're around",
+            "Your favorite crime",
+            "She's so pretty",
+            "I'm selfish, I know",
+            "Really",
+            "I don't understand",
+            "I've spent the night",
+            "Do you get déjà vu? (Oh-oh)",
+        ]
+
+        prompt = f"""
+        You will be given a song lyric that will require you to analyze its potential impact on my Twitter audience, who are fans of a specific popstar. 
+
+        Please rate the lyric on the following scales:
+
+        * Emotional Resonance: 
+            * 1 (Very low) - The lyric evokes little to no emotional response.
+            * 3 (Neutral) - The lyric evokes a mild emotional response or is emotionally neutral.
+            * 5 (Very high) - The lyric evokes a strong emotional response. 
+
+        * Relatability:
+            * 1 (Very low) - The lyric describes a very niche or uncommon experience.
+            * 3 (Neutral) - The lyric describes an experience that some, but not all, people might relate to.
+            * 5 (Very high) - The lyric describes a universal experience or emotion that most people can connect with.
+
+        * Thought-provoking nature:
+            * 1 (Very low) - The lyric is straightforward and doesn't invite deeper thought or interpretation
+            * 3 (Neutral) - The lyric might prompt some reflection, but doesn't necessarily challenge existing perspectives
+            * 5 (Very high) - The lyric challenges conventional thinking, sparks debate or encourages deeper analysis
+
+        Keep in mind that pop music lyrics often use figurative language, metaphors, and hyperbole to express emotions and experiences. Relatability can stem from both positive and negative emotions, as well as observations about common social situations.
+
+        Here are some examples of lyrics that I think are typically positive/valid: {sample_valid_lyrics}, and here are some examples of lyrics that I think are negative/invalid: {sample_invalid_lyrics}.
+
+        Based on these critereas, summarize the lyric and respond with either 'Positive' or 'Negative'.
+
+        Here is the lyric: {lyric}
+        """
+        # Send query to OpenAI
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.OPENAI_API_KEY}",
+        }
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.3,
+        }
+
+        self.logger.info("Sending lyric to OpenAI to validate its status as a lyric.")
+
+        successful_prompt = False
+        resp_msg = ""
+
+        while not successful_prompt:
+            r = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                data=json.dumps(payload),
+                headers=headers,
+            )
+            resp = json.loads(r.text)
+
+            if r.status_code == 200:
+                resp_msg = resp["choices"][0]["message"]["content"].lower()
+                successful_prompt = True
+
+            elif r.status_code == 429:
+                wait_time = 21
+                time.sleep(wait_time)
+
+        # Parse the response
+        if "positive" in resp_msg:
+            self.logger.info(
+                """The lyric " %s " has passed validation from OpenAI.""", lyric
+            )
+
+            return True
+
+        else:
+            self.logger.info(
+                """The lyric " %s " has failed validation from OpenAI.""", lyric
+            )
+
+            return False
