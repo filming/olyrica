@@ -12,14 +12,15 @@ def main():
     olyrica.logger.info(
         "Delay between each tweet set to: %s hour(s), %s minute(s) and %s second(s).",
         hours,
-        seconds,
         minutes,
+        seconds,
     )
 
     while True:
         try:
             lyric = olyrica.get_valid_lyric()
 
+            olyrica.logger.info("Sending lyric to XIFY to be tweeted.")
             olyrica.xify.create_tweet(lyric)
 
             time.sleep(TWEET_DELAY)
