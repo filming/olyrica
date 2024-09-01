@@ -134,8 +134,6 @@ class Olyrica:
         """Determine the validity of a lyric using OpenAI."""
 
         # Create custom prompt
-        prompt = f"""You will be given a song lyric that will require you to analyze its emotional depth, relatability and thought-provoking nature. This is to determine its potential impact on my Twitter audience. My Twitter audience in this case are fans of a specific popstar. Respond with 'Positive' if the lyric demonstrates introspection, emotional resonance, or thought-provoking elements, making it relatable and engaging. Otherwise, respond with 'Negative' if the lyric lacks depth or fails to resonate emotionally or intellectually. If the lyric contains vivid metaphors, powerful imagery, or captures universal experiences, consider it as 'Positive'. Here is the lyric: {lyric}"""
-
         sample_valid_lyrics = [
             "You used me as an alibi",
             "Just so I could call you mine",
@@ -189,8 +187,11 @@ class Olyrica:
 
         Based on these critereas, summarize the lyric and respond with either 'Positive' or 'Negative'.
 
+        Note: If there are any background-vocals noted inside of the lyric, for example (Oh-oh-oh), just return the lyric as 'Negative'.
+
         Here is the lyric: {lyric}
         """
+
         # Send query to OpenAI
         headers = {
             "Content-Type": "application/json",
